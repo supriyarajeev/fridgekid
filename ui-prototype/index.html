@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FridgeKid</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --green: #2D9B6F;
+    --green-light: #E8F7F1;
+    --green-mid: #4DBF8A;
+    --orange: #F4845F;
+    --yellow: #F9C846;
+    --bg: #F7F8FA;
+    --card: #FFFFFF;
+    --text: #1A1D23;
+    --text-muted: #7A808C;
+    --radius: 20px;
+    --radius-sm: 12px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    background: #E8EDF2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .app-shell {
+    width: 100%;
+    max-width: 1280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+  }
+
+  .desktop-panel {
+    display: none;
+    width: min(440px, 36vw);
+    align-self: stretch;
+    padding: 36px 30px;
+    border-radius: 36px;
+    background:
+      radial-gradient(circle at top left, rgba(249,200,70,0.22), transparent 34%),
+      radial-gradient(circle at bottom right, rgba(45,155,111,0.18), transparent 38%),
+      linear-gradient(160deg, #f8fbfd 0%, #eef3f7 100%);
+    box-shadow: 0 26px 60px rgba(18, 38, 63, 0.12);
+    color: var(--text);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .desktop-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 36px;
+    border: 1px solid rgba(255,255,255,0.55);
+    pointer-events: none;
+  }
+
+  .desktop-kicker {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 14px;
+  }
+
+  .desktop-title {
+    font-size: 42px;
+    line-height: 1.02;
+    font-weight: 900;
+    margin-bottom: 14px;
+    max-width: 10ch;
+  }
+
+  .desktop-copy {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #5d6674;
+    margin-bottom: 22px;
+    max-width: 32ch;
+  }
+
+  .desktop-points {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .desktop-point {
+    background: rgba(255,255,255,0.75);
+    border-radius: 20px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 24px rgba(18, 38, 63, 0.06);
+  }
+
+  .desktop-point-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .desktop-point-copy {
+    font-size: 13px;
+    line-height: 1.55;
+    color: #66707f;
+  }
+
+  .desktop-quote {
+    margin-top: auto;
+    background: rgba(255,255,255,0.88);
+    border-radius: 24px;
+    padding: 18px 18px 16px;
+    box-shadow: 0 10px 28px rgba(18, 38, 63, 0.08);
+  }
+
+  .desktop-quote-text {
+    font-size: 15px;
+    line-height: 1.65;
+    font-weight: 600;
+    color: #29303a;
+    margin-bottom: 10px;
+  }
+
+  .desktop-quote-meta {
+    font-size: 12px;
+    color: #748091;
+  }
+
+  /* Phone shell */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 50px;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.2);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .status-bar {
+    padding: 14px 28px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .notch {
+    width: 120px; height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    margin: 0 auto;
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+  }
+
+  /* Screens */
+  .screen { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+  .screen.active { display: flex; }
+
+  .hidden { display: none !important; }
+
+  /* Scroll area */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 100px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* Nav bar */
+  .nav {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 82px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0,0,0,0.06);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10px;
+    z-index: 10;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: all 0.2s;
+  }
+  .nav-item svg { width: 24px; height: 24px; }
+  .nav-item span { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+  .nav-item.active span { color: var(--green); }
+  .nav-item.active svg path, .nav-item.active svg rect, .nav-item.active svg circle { fill: var(--green); }
+
+  /* ——— HOME SCREEN ——— */
+  .home-header {
+    padding: 20px 0 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .greeting { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .greeting span { color: var(--green); }
+  .avatar {
+    width: 42px; height: 42px;
+    background: var(--green);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  /* Fridge status pill */
+  .fridge-pill {
+    background: var(--green-light);
+    border: 1px solid rgba(45,155,111,0.2);
+    border-radius: 40px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    cursor: pointer;
+  }
+  .fridge-pill .dot {
+    width: 8px; height: 8px;
+    background: var(--green-mid);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+  .fridge-pill-text { font-size: 13px; font-weight: 600; color: var(--green); }
+  .fridge-pill-sub { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+
+  /* Meal card */
+  .meal-card {
+    background: var(--green);
+    border-radius: var(--radius);
+    padding: 22px;
+    color: white;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .meal-card:active { transform: scale(0.98); }
+  .meal-card-bg {
+    position: absolute;
+    right: -20px; top: -20px;
+    width: 160px; height: 160px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+  .meal-card-bg2 {
+    position: absolute;
+    right: 40px; bottom: -40px;
+    width: 100px; height: 100px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+  .meal-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-bottom: 8px;
+  }
+  .meal-name { font-size: 22px; font-weight: 800; line-height: 1.2; margin-bottom: 6px; }
+  .meal-sub { font-size: 13px; opacity: 0.8; margin-bottom: 18px; }
+  .meal-meta { display: flex; gap: 12px; margin-bottom: 18px; }
+  .meal-badge {
+    background: rgba(255,255,255,0.18);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .meal-nutrients { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nutrient-pill {
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .meal-cta {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 16px;
+  }
+  .meal-btn {
+    background: white;
+    color: var(--green);
+    border: none;
+    border-radius: 40px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .meal-btn:active { transform: scale(0.96); }
+  .swipe-hint { font-size: 12px; opacity: 0.65; }
+  .meal-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .meal-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+  }
+  .meal-dot.active { background: white; width: 18px; border-radius: 5px; }
+
+  /* Nutrition snapshot */
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    margin-top: 4px;
+  }
+  .nutrition-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+  .nutrition-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 13px;
+  }
+  .nutrition-row:last-child { margin-bottom: 0; }
+  .nutrition-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .nutrition-label { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
+  .nutrition-sub { font-size: 12px; color: var(--text-muted); font-weight: 400; }
+  .nutrition-status {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .status-good { background: var(--green-light); color: var(--green); }
+  .status-mid { background: #FFF8E6; color: #C08A00; }
+  .status-gap { background: #FFF2EE; color: var(--orange); }
+
+  /* Kids row */
+  .kids-row { display: flex; gap: 10px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; }
+  .kids-row::-webkit-scrollbar { display: none; }
+  .kid-chip {
+    background: var(--card);
+    border-radius: 40px;
+    padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    cursor: pointer;
+    border: 2px solid transparent;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .kid-chip.selected { border-color: var(--green); background: var(--green-light); }
+  .kid-chip .kid-emoji { font-size: 20px; }
+  .kid-chip .kid-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .kid-chip .kid-age { font-size: 11px; color: var(--text-muted); }
+
+  .confidence-card {
+    background: linear-gradient(135deg, #FFF6E7, #FFFDF7);
+    border: 1px solid rgba(249,200,70,0.35);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .confidence-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #7A6200;
+    margin-bottom: 6px;
+  }
+  .confidence-copy {
+    font-size: 13px;
+    color: #8B6C00;
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .confidence-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .confidence-chip {
+    background: rgba(255,255,255,0.8);
+    border-radius: 20px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #7A6200;
+  }
+
+  /* ——— RECIPE SCREEN ——— */
+  .recipe-header {
+    background: var(--green);
+    padding: 60px 20px 28px;
+    color: white;
+    flex-shrink: 0;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 600;
+    opacity: 0.85;
+    cursor: pointer;
+    margin-bottom: 16px;
+    width: fit-content;
+  }
+  .recipe-title { font-size: 26px; font-weight: 800; line-height: 1.2; margin-bottom: 6px; }
+  .recipe-sub { font-size: 14px; opacity: 0.8; margin-bottom: 16px; }
+  .recipe-meta-row { display: flex; gap: 10px; }
+  .recipe-badge {
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .recipe-body { padding: 20px; }
+  .recipe-section { margin-bottom: 24px; }
+  .recipe-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .ingredient-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .ingredient-row:last-child { border-bottom: none; }
+  .ingredient-dot {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .ingredient-name { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+  .ingredient-amount { font-size: 13px; color: var(--text-muted); }
+  .in-fridge-tag {
+    font-size: 11px; font-weight: 700;
+    background: var(--green-light);
+    color: var(--green);
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+  .step-row {
+    display: flex; gap: 14px;
+    margin-bottom: 16px;
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    background: var(--green);
+    color: white;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { font-size: 14px; line-height: 1.6; color: var(--text); }
+  .kid-tip {
+    background: #FFF9EC;
+    border: 1px solid #F9C846;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #7A6200;
+    display: flex; gap: 10px; align-items: flex-start;
+    margin-top: 16px;
+  }
+  .kid-tip-icon { font-size: 18px; flex-shrink: 0; }
+
+  /* ——— NUTRITION SCREEN ——— */
+  .nutrition-screen-header {
+    padding: 20px 20px 12px;
+    flex-shrink: 0;
+  }
+  .screen-title { font-size: 26px; font-weight: 800; color: var(--text); }
+  .screen-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+  .week-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin: 0 20px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .week-nav span { font-size: 14px; font-weight: 700; color: var(--text); }
+  .week-arrow { font-size: 18px; color: var(--text-muted); cursor: pointer; padding: 0 6px; }
+  .child-banner {
+    margin: 0 20px 16px;
+    background: var(--green);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    color: white;
+  }
+  .child-banner-emoji { font-size: 28px; }
+  .child-banner-name { font-size: 16px; font-weight: 800; }
+  .child-banner-age { font-size: 12px; opacity: 0.75; }
+  .child-banner-tag {
+    margin-left: auto;
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .nutrient-detail-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin: 0 20px 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+  .ndc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .ndc-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .ndc-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .ndc-status { font-size: 12px; margin-top: 2px; }
+  .progress-bar {
+    height: 8px;
+    background: #EAEEF2;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.8s ease;
+  }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
+  .insight-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    line-height: 1.5;
+  }
+
+  /* ——— PROFILE / FRIDGE SCREEN ——— */
+  .profile-header {
+    padding: 20px 20px 12px;
+    flex-shrink: 0;
+  }
+  .fridge-status-card {
+    margin: 0 20px 14px;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+  .fsc-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 12px; }
+  .fsc-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .food-chip {
+    background: var(--green-light);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--green);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .food-chip.low { background: #FFF3F0; color: var(--orange); }
+  .low-dot { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; }
+
+  .shopping-card {
+    margin: 0 20px 14px;
+    background: var(--yellow);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .sc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .sc-title { font-size: 15px; font-weight: 800; color: #5A3800; }
+  .sc-sub { font-size: 12px; color: #7A5200; margin-bottom: 12px; }
+  .sc-item {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #3A2800;
+  }
+  .sc-item:last-child { margin-bottom: 0; }
+  .sc-why { font-size: 11px; font-weight: 400; color: #7A5200; margin-left: auto; }
+  .add-instacart {
+    width: 100%;
+    background: #2D9B6F;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  /* Onboarding */
+  .onboard-screen {
+    background: white;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 28px 40px;
+    text-align: center;
+  }
+  .onboard-emoji { font-size: 72px; margin-bottom: 24px; }
+  .onboard-title { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1.2; margin-bottom: 12px; }
+  .onboard-sub { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 40px; }
+  .onboard-btn {
+    width: 100%;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+    margin-bottom: 12px;
+  }
+  .onboard-btn:active { transform: scale(0.97); }
+  .onboard-btn.secondary {
+    background: transparent;
+    color: var(--green);
+    border: 2px solid var(--green);
+  }
+  .onboard-card {
+    width: 100%;
+    background: #F8FAFC;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 18px;
+    padding: 16px;
+    text-align: left;
+    margin-bottom: 24px;
+  }
+  .onboard-card-title {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .onboard-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .onboard-card-row:last-child { border-bottom: none; }
+  .onboard-card-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .onboard-card-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+  .connect-pill {
+    background: var(--green-light);
+    color: var(--green);
+    border-radius: 20px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .smart-fridge-note {
+    width: 100%;
+    background: #FFF3F0;
+    border: 1px solid rgba(244,132,95,0.25);
+    border-radius: 16px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #7F4B3B;
+    margin-top: auto;
+  }
+  .steps-row { display: flex; gap: 8px; margin-bottom: 40px; }
+  .step-dot { width: 8px; height: 8px; background: #E0E4EA; border-radius: 50%; }
+  .step-dot.active { background: var(--green); width: 24px; border-radius: 4px; }
+
+  /* Transitions */
+  .screen { animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Scrollbar on outer */
+  body::-webkit-scrollbar { display: none; }
+
+  @media (min-width: 980px) {
+    body {
+      padding: 28px;
+      align-items: stretch;
+      background:
+        radial-gradient(circle at 12% 14%, rgba(249,200,70,0.28), transparent 18%),
+        radial-gradient(circle at 82% 82%, rgba(45,155,111,0.16), transparent 22%),
+        linear-gradient(180deg, #ebf0f5 0%, #dfe7ee 100%);
+    }
+
+    .app-shell {
+      min-height: calc(100vh - 56px);
+    }
+
+    .desktop-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .phone {
+      width: min(420px, 34vw);
+      height: min(860px, calc(100vh - 56px));
+      max-height: 860px;
+      border-radius: 44px;
+      box-shadow: 0 34px 90px rgba(0,0,0,0.18), inset 0 0 0 1px rgba(255,255,255,0.25);
+    }
+  }
+
+  @media (max-width: 979px) {
+    .app-shell {
+      max-width: 460px;
+    }
+  }
+
+  @media (max-width: 460px) {
+    body {
+      padding: 0;
+      background: var(--bg);
+    }
+
+    .app-shell {
+      max-width: none;
+      width: 100%;
+    }
+
+    .phone {
+      width: 100%;
+      height: 100vh;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .notch {
+      border-radius: 0 0 18px 18px;
+    }
+
+    .scroll-area {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .nutrition-screen-header,
+    .profile-header,
+    .recipe-header {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .week-nav,
+    .child-banner,
+    .nutrient-detail-card,
+    .fridge-status-card,
+    .shopping-card {
+      margin-left: 16px;
+      margin-right: 16px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+<aside class="desktop-panel">
+  <div class="desktop-kicker">FridgeKid Demo</div>
+  <div class="desktop-title">Smart fridge planning for real family dinners.</div>
+  <div class="desktop-copy">This desktop layout presents the mobile product in context: one trustworthy meal idea, a kid-safe variation, and a lightweight nutrition snapshot grounded in the research pain points.</div>
+
+  <div class="desktop-points">
+    <div class="desktop-point">
+      <div class="desktop-point-title">One shared base meal</div>
+      <div class="desktop-point-copy">The UI avoids “three different dinners” and keeps the recommendation explainable from what is already in the fridge.</div>
+    </div>
+    <div class="desktop-point">
+      <div class="desktop-point-title">Low-friction nutrition view</div>
+      <div class="desktop-point-copy">Coverage is framed in reassuring language, not clinical scores, calorie pressure, or guilt-based alerts.</div>
+    </div>
+    <div class="desktop-point">
+      <div class="desktop-point-title">Narrow v1 on purpose</div>
+      <div class="desktop-point-copy">The onboarding and unsupported-device states make the smart-fridge-only launch constraint explicit instead of hiding it.</div>
+    </div>
+  </div>
+
+  <div class="desktop-quote">
+    <div class="desktop-quote-text">“I so wish we could all sit at the table and eat essentially the same thing.”</div>
+    <div class="desktop-quote-meta">Reddit, r/workingmoms · October 11, 2025</div>
+  </div>
+</aside>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1A1D23"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1A1D23"/><rect x="9" y="0" width="3" height="12" rx="1" fill="#1A1D23"/><rect x="13.5" y="0" width="3" height="12" rx="1" fill="#1A1D23" opacity="0.3"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.4C10.5 2.4 12.7 3.5 14.2 5.2L15.5 3.9C13.6 1.8 10.9 0.5 8 0.5C5.1 0.5 2.4 1.8 0.5 3.9L1.8 5.2C3.3 3.5 5.5 2.4 8 2.4Z" fill="#1A1D23"/><path d="M8 5.3C9.7 5.3 11.2 6 12.3 7.1L13.6 5.8C12.1 4.3 10.1 3.4 8 3.4C5.9 3.4 3.9 4.3 2.4 5.8L3.7 7.1C4.8 6 6.3 5.3 8 5.3Z" fill="#1A1D23"/><circle cx="8" cy="10" r="1.8" fill="#1A1D23"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#1A1D23" stroke-opacity="0.35"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#1A1D23"/><path d="M23 4v4a2 2 0 000-4z" fill="#1A1D23" opacity="0.4"/></svg>
+    </div>
+  </div>
+
+  <!-- ======= ONBOARDING ======= -->
+  <div class="screen" id="screen-onboarding">
+    <div class="onboard-screen">
+      <div class="steps-row">
+        <div class="step-dot active"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot active"></div>
+      </div>
+      <div class="onboard-emoji">🧊</div>
+      <div class="onboard-title">Connect your smart fridge, skip the food diary</div>
+      <div class="onboard-sub">FridgeKid turns what is already in your fridge into one simple family meal idea, a kid-safe variation, and a lightweight nutrition snapshot.</div>
+
+      <div class="onboard-card">
+        <div class="onboard-card-title">Launch Setup</div>
+        <div class="onboard-card-row">
+          <div>
+            <div class="onboard-card-label">Samsung Family Hub</div>
+            <div class="onboard-card-sub">Supported for FridgeKid v1</div>
+          </div>
+          <div class="connect-pill">Recommended</div>
+        </div>
+        <div class="onboard-card-row">
+          <div>
+            <div class="onboard-card-label">LG smart fridge</div>
+            <div class="onboard-card-sub">Waitlist while integrations expand</div>
+          </div>
+          <div class="connect-pill" style="background:#F2F4F7;color:#7A808C;">Soon</div>
+        </div>
+        <div class="onboard-card-row">
+          <div>
+            <div class="onboard-card-label">Anything else</div>
+            <div class="onboard-card-sub">Not in v1 launch scope</div>
+          </div>
+          <div class="connect-pill" style="background:#FFF3F0;color:#D26A48;">Unsupported</div>
+        </div>
+      </div>
+
+      <button class="onboard-btn" onclick="startDemo()">Continue with demo fridge</button>
+      <button class="onboard-btn secondary" onclick="showUnsupported()">My fridge isn't supported</button>
+
+      <div class="smart-fridge-note">
+        FridgeKid v1 is intentionally narrow. The launch product only supports compatible smart-fridge households so the passive inventory experience stays clean and believable.
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-unsupported">
+    <div class="onboard-screen">
+      <div class="steps-row">
+        <div class="step-dot active"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+      </div>
+      <div class="onboard-emoji">📭</div>
+      <div class="onboard-title">Not supported in v1</div>
+      <div class="onboard-sub">This prototype follows the current PRD: no fallback camera mode, no manual pantry setup, and no partial launch flow for unsupported households.</div>
+
+      <div class="onboard-card">
+        <div class="onboard-card-title">Why</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.6;">
+          The core value proposition is passive inventory from a compatible fridge. If we fake that with manual setup in v1, the product becomes another admin tool, which is exactly what the research warned against.
+        </div>
+      </div>
+
+      <button class="onboard-btn" onclick="navigate('screen-onboarding')">Go back</button>
+      <button class="onboard-btn secondary" onclick="startDemo()">View demo anyway</button>
+    </div>
+  </div>
+
+  <!-- ======= HOME SCREEN ======= -->
+  <div class="screen" id="screen-home">
+    <div class="scroll-area">
+      <div class="home-header">
+        <div>
+          <div class="greeting">Good morning, <span>Sarah</span> 👋</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:3px;">Wednesday · April 16</div>
+        </div>
+        <div class="avatar">🧑‍🍳</div>
+      </div>
+
+      <div class="fridge-pill" onclick="navigate('screen-fridge')">
+        <div class="dot"></div>
+        <span class="fridge-pill-text">Fridge synced · 23 items</span>
+        <span class="fridge-pill-sub">2 min ago ›</span>
+      </div>
+
+      <div class="kids-row">
+        <div class="kid-chip selected" data-kid="mia" onclick="selectKid('mia')">
+          <span class="kid-emoji">👧</span>
+          <div>
+            <div class="kid-name">Mia</div>
+            <div class="kid-age">Age 5</div>
+          </div>
+        </div>
+        <div class="kid-chip" data-kid="jake" onclick="selectKid('jake')">
+          <span class="kid-emoji">👦</span>
+          <div>
+            <div class="kid-name">Jake</div>
+            <div class="kid-age">Age 8</div>
+          </div>
+        </div>
+        <div class="kid-chip" onclick="navigate('screen-profile')" style="border-style:dashed;border-color:#CDD2DA;background:transparent;box-shadow:none;">
+          <span style="font-size:18px;color:var(--text-muted)">+</span>
+          <div class="kid-name" style="color:var(--text-muted)">Add child</div>
+        </div>
+      </div>
+
+      <div class="meal-card" onclick="navigate('screen-recipe')">
+        <div class="meal-card-bg"></div>
+        <div class="meal-card-bg2"></div>
+        <div class="meal-label">Tonight's dinner idea</div>
+        <div class="meal-name" id="meal-name">Hidden Veg Pasta</div>
+        <div class="meal-sub" id="meal-sub">From what's in your fridge right now</div>
+        <div class="meal-meta">
+          <div class="meal-badge" id="meal-time">⏱ 18 min</div>
+          <div class="meal-badge" id="meal-rating">⭐⭐⭐ Kid-friendly</div>
+        </div>
+        <div class="meal-nutrients" id="meal-nutrients">
+          <div class="nutrient-pill">✓ Iron</div>
+          <div class="nutrient-pill">✓ Vitamin C</div>
+          <div class="nutrient-pill">✓ Protein</div>
+        </div>
+        <div class="meal-cta">
+          <button class="meal-btn">See recipe →</button>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <div class="meal-dots">
+              <span class="meal-dot active"></span>
+              <span class="meal-dot"></span>
+              <span class="meal-dot"></span>
+            </div>
+            <span class="swipe-hint">Double-tap for another idea</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="confidence-card">
+        <div class="confidence-title">Why we picked this</div>
+        <div class="confidence-copy" id="confidence-copy">You already have pasta, spinach, carrots, tomatoes, eggs, and cheese. This keeps dinner shared while still working for Mia's current safe-food pattern.</div>
+        <div class="confidence-row" id="confidence-row">
+          <div class="confidence-chip">23 fridge items synced</div>
+          <div class="confidence-chip">1 kid-safe variation</div>
+          <div class="confidence-chip">No extra shopping required</div>
+        </div>
+      </div>
+
+      <div class="section-title" id="snapshot-title">Mia's nutrition this week</div>
+      <div class="nutrition-card" id="snapshot-card">
+        <div class="nutrition-row">
+          <div class="nutrition-icon" style="background:#E8F7F1;">🥩</div>
+          <div>
+            <div class="nutrition-label">Iron</div>
+            <div class="nutrition-sub">From eggs, spinach, pasta</div>
+          </div>
+          <div class="nutrition-status status-good">Covered ✓</div>
+        </div>
+        <div class="nutrition-row">
+          <div class="nutrition-icon" style="background:#FFF8E6;">☀️</div>
+          <div>
+            <div class="nutrition-label">Vitamin D</div>
+            <div class="nutrition-sub">Tonight's meal helps</div>
+          </div>
+          <div class="nutrition-status status-mid">Getting there</div>
+        </div>
+        <div class="nutrition-row">
+          <div class="nutrition-icon" style="background:#E8F7F1;">🥦</div>
+          <div>
+            <div class="nutrition-label">Vitamin C</div>
+            <div class="nutrition-sub">From broccoli, orange juice</div>
+          </div>
+          <div class="nutrition-status status-good">Covered ✓</div>
+        </div>
+        <div class="nutrition-row">
+          <div class="nutrition-icon" style="background:#E8F7F1;">🥚</div>
+          <div>
+            <div class="nutrition-label">Protein</div>
+            <div class="nutrition-sub">Eggs, cheese, chicken</div>
+          </div>
+          <div class="nutrition-status status-good">Covered ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item active" onclick="navigate('screen-home')">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="#2D9B6F"/></svg>
+        <span style="color:var(--green)">Home</span>
+      </div>
+      <div class="nav-item" onclick="navigate('screen-nutrition')">
+        <svg viewBox="0 0 24 24"><path d="M11 2C6.03 2 2 6.03 2 11s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7zm.5-11H10v5l4.25 2.55.75-1.23-3.5-2.07V7z" fill="#7A808C"/></svg>
+        <span>Nutrition</span>
+      </div>
+      <div class="nav-item" onclick="navigate('screen-fridge')">
+        <svg viewBox="0 0 24 24"><path d="M18 2.01L6 2c-1.1 0-2 .89-2 2v18c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.11-.9-1.99-2-1.99zM18 11H6V4h12v7zm0 9H6v-7h12v7z" fill="#7A808C"/></svg>
+        <span>Fridge</span>
+      </div>
+      <div class="nav-item" onclick="navigate('screen-profile')">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#7A808C"/></svg>
+        <span>Profile</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ======= RECIPE SCREEN ======= -->
+  <div class="screen" id="screen-recipe">
+    <div class="recipe-header">
+      <div class="back-btn" onclick="navigate('screen-home')">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="white"/></svg>
+        Back
+      </div>
+      <div class="recipe-title" id="recipe-title">Hidden Veg Pasta</div>
+      <div class="recipe-sub" id="recipe-sub">A family favourite — kids taste pasta, parents know better 😉</div>
+      <div class="recipe-meta-row">
+        <div class="recipe-badge" id="recipe-time">⏱ 18 min</div>
+        <div class="recipe-badge">👨‍👩‍👧 Serves 4</div>
+        <div class="recipe-badge" id="recipe-rating">⭐⭐⭐ Kid-friendly</div>
+      </div>
+    </div>
+
+    <div class="scroll-area" style="padding-top:4px;">
+      <div class="recipe-body">
+        <div class="recipe-section">
+          <div class="recipe-section-title">Ingredients — from your fridge</div>
+          <div class="ingredient-row">
+            <div class="ingredient-dot"></div>
+            <span class="ingredient-name">Pasta (any shape)</span>
+            <span class="ingredient-amount">300g</span>
+            <span class="in-fridge-tag">✓ In fridge</span>
+          </div>
+          <div class="ingredient-row">
+            <div class="ingredient-dot"></div>
+            <span class="ingredient-name">Spinach</span>
+            <span class="ingredient-amount">1 handful</span>
+            <span class="in-fridge-tag">✓ In fridge</span>
+          </div>
+          <div class="ingredient-row">
+            <div class="ingredient-dot"></div>
+            <span class="ingredient-name">Canned tomatoes</span>
+            <span class="ingredient-amount">1 tin</span>
+            <span class="in-fridge-tag">✓ In fridge</span>
+          </div>
+          <div class="ingredient-row">
+            <div class="ingredient-dot"></div>
+            <span class="ingredient-name">Carrots</span>
+            <span class="ingredient-amount">2 medium</span>
+            <span class="in-fridge-tag">✓ In fridge</span>
+          </div>
+          <div class="ingredient-row">
+            <div class="ingredient-dot"></div>
+            <span class="ingredient-name">Garlic</span>
+            <span class="ingredient-amount">2 cloves</span>
+            <span class="ingredient-amount" style="color:var(--orange);">⚠ Buy</span>
+          </div>
+        </div>
+
+        <div class="recipe-section">
+          <div class="recipe-section-title">Steps</div>
+          <div class="step-row">
+            <div class="step-num">1</div>
+            <div class="step-text">Boil pasta according to packet. While it cooks, finely chop carrots and spinach.</div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">2</div>
+            <div class="step-text">Blend chopped veg with the canned tomatoes until smooth. Season with a pinch of salt.</div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">3</div>
+            <div class="step-text">Warm the sauce in a pan for 5 minutes. Drain pasta and stir through.</div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">4</div>
+            <div class="step-text">Serve with grated cheese on top.</div>
+          </div>
+        </div>
+
+        <div class="kid-tip">
+          <span class="kid-tip-icon">💡</span>
+          <div>
+            <strong>Kid-friendly tip:</strong> <span id="recipe-tip">Blend the sauce completely smooth — kids won't see the spinach or carrots. Serve Mia's portion before adding any chilli or strong herbs.</span>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;background:var(--green-light);border-radius:var(--radius-sm);padding:14px 16px;">
+          <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px;">Nutrition this meal covers</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="background:white;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--text);">🥩 Iron</div>
+            <div style="background:white;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--text);">🍊 Vitamin C</div>
+            <div style="background:white;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--text);">🥚 Protein</div>
+            <div style="background:white;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--text);">🌿 Folate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= NUTRITION SCREEN ======= -->
+  <div class="screen" id="screen-nutrition">
+    <div class="nutrition-screen-header">
+      <div class="screen-title">Nutrition</div>
+      <div class="screen-subtitle" id="nutrition-subtitle">How Mia's doing this week</div>
+    </div>
+
+    <div class="week-nav">
+      <span class="week-arrow">‹</span>
+      <span>Apr 14 – Apr 20, 2026</span>
+      <span class="week-arrow">›</span>
+    </div>
+
+    <div class="child-banner">
+      <span class="child-banner-emoji">👧</span>
+      <div>
+        <div class="child-banner-name" id="nutrition-child-name">Mia</div>
+        <div class="child-banner-age" id="nutrition-child-age">Age 5 · USDA targets for 4–8 yr</div>
+      </div>
+      <span class="child-banner-tag" id="nutrition-child-tag">4 of 5 covered</span>
+    </div>
+
+    <div class="scroll-area" style="padding:0 0 100px;">
+      <div class="nutrient-detail-card">
+        <div class="ndc-header">
+          <div class="ndc-icon" style="background:#E8F7F1;">🥩</div>
+          <div>
+            <div class="ndc-name">Iron</div>
+            <div class="ndc-status" style="color:var(--green);font-weight:700;font-size:12px;">Covered ✓</div>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:82%;background:var(--green);"></div></div>
+        <div class="progress-label"><span>This week</span><span style="font-weight:700;color:var(--text)">82% of weekly target</span></div>
+        <div class="insight-text">Eggs on Tuesday and Wednesday's pasta both contributed. On track to hit 100% by Sunday.</div>
+      </div>
+
+      <div class="nutrient-detail-card">
+        <div class="ndc-header">
+          <div class="ndc-icon" style="background:#FFF8E6;">☀️</div>
+          <div>
+            <div class="ndc-name">Vitamin D</div>
+            <div class="ndc-status" style="color:#C08A00;font-weight:700;font-size:12px;">Getting there</div>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:48%;background:var(--yellow);"></div></div>
+        <div class="progress-label"><span>This week</span><span style="font-weight:700;color:var(--text)">48% of weekly target</span></div>
+        <div class="insight-text">Tonight's pasta with eggs will help. Adding salmon or fortified milk once this week would close the gap.</div>
+      </div>
+
+      <div class="nutrient-detail-card">
+        <div class="ndc-header">
+          <div class="ndc-icon" style="background:#E8F7F1;">🍊</div>
+          <div>
+            <div class="ndc-name">Vitamin C</div>
+            <div class="ndc-status" style="color:var(--green);font-weight:700;font-size:12px;">Covered ✓</div>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:95%;background:var(--green);"></div></div>
+        <div class="progress-label"><span>This week</span><span style="font-weight:700;color:var(--text)">95% of weekly target</span></div>
+        <div class="insight-text">Broccoli on Monday and orange juice Tuesday covered most of this. Great week for Vitamin C.</div>
+      </div>
+
+      <div class="nutrient-detail-card">
+        <div class="ndc-header">
+          <div class="ndc-icon" style="background:#E8F7F1;">🥚</div>
+          <div>
+            <div class="ndc-name">Protein</div>
+            <div class="ndc-status" style="color:var(--green);font-weight:700;font-size:12px;">Covered ✓</div>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:90%;background:var(--green);"></div></div>
+        <div class="progress-label"><span>This week</span><span style="font-weight:700;color:var(--text)">90% of weekly target</span></div>
+        <div class="insight-text">Eggs and cheese are doing the work here. Solid protein week for Mia.</div>
+      </div>
+
+      <div style="height:8px;"></div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item" onclick="navigate('screen-home')">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="#7A808C"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="nav-item active" onclick="navigate('screen-nutrition')">
+        <svg viewBox="0 0 24 24"><path d="M11 2C6.03 2 2 6.03 2 11s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7zm.5-11H10v5l4.25 2.55.75-1.23-3.5-2.07V7z" fill="#2D9B6F"/></svg>
+        <span style="color:var(--green)">Nutrition</span>
+      </div>
+      <div class="nav-item" onclick="navigate('screen-fridge')">
+        <svg viewBox="0 0 24 24"><path d="M18 2.01L6 2c-1.1 0-2 .89-2 2v18c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.11-.9-1.99-2-1.99zM18 11H6V4h12v7zm0 9H6v-7h12v7z" fill="#7A808C"/></svg>
+        <span>Fridge</span>
+      </div>
+      <div class="nav-item" onclick="navigate('screen-profile')">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#7A808C"/></svg>
+        <span>Profile</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ======= FRIDGE SCREEN ======= -->
+  <div class="screen" id="screen-fridge">
+    <div class="profile-header">
+      <div class="screen-title">Fridge</div>
+      <div class="screen-subtitle">Last synced 2 minutes ago · 23 items</div>
+    </div>
+
+    <div class="scroll-area" style="padding:0 0 100px;">
+      <div class="fridge-status-card">
+        <div class="fsc-title">Identified in fridge</div>
+        <div class="fsc-row">
+          <div class="food-chip">🥚 Eggs</div>
+          <div class="food-chip">🧀 Cheese</div>
+          <div class="food-chip">🥛 Milk</div>
+          <div class="food-chip">🍝 Pasta</div>
+          <div class="food-chip">🥦 Broccoli</div>
+          <div class="food-chip">🥕 Carrots</div>
+          <div class="food-chip">🍅 Tomatoes</div>
+          <div class="food-chip">🫐 Blueberries</div>
+          <div class="food-chip">🥬 Spinach</div>
+          <div class="food-chip low"><div class="low-dot"></div>Butter (low)</div>
+          <div class="food-chip low"><div class="low-dot"></div>OJ (low)</div>
+        </div>
+      </div>
+
+      <div style="margin:0 20px 14px;background:white;border-radius:var(--radius);padding:16px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+        <div style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:12px;">Unrecognised items</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.05);">
+          <div style="width:40px;height:40px;background:#F0F2F5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">❓</div>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:var(--text)">Container (left shelf)</div>
+            <div style="font-size:12px;color:var(--text-muted)">We're not sure what this is</div>
+          </div>
+          <button style="background:var(--green-light);color:var(--green);border:none;border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">Label it</button>
+        </div>
+      </div>
+
+      <div class="shopping-card">
+        <div class="sc-header">
+          <span style="font-size:22px;">🛒</span>
+          <div class="sc-title">This week's top picks</div>
+        </div>
+        <div class="sc-sub">Adding these 4 items would cover Mia's Vitamin D gap and give Jake more variety.</div>
+        <div class="sc-item">🐟 Salmon fillet <span class="sc-why">Vitamin D for Mia</span></div>
+        <div class="sc-item">🥛 Fortified oat milk <span class="sc-why">Vitamin D + Calcium</span></div>
+        <div class="sc-item">🍌 Bananas <span class="sc-why">Potassium for Jake</span></div>
+        <div class="sc-item">🧄 Garlic <span class="sc-why">Tonight's recipe</span></div>
+        <button class="add-instacart">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0023.46 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2z" fill="white"/></svg>
+          Add to Instacart cart
+        </button>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item" onclick="navigate('screen-home')">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="#7A808C"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="nav-item" onclick="navigate('screen-nutrition')">
+        <svg viewBox="0 0 24 24"><path d="M11 2C6.03 2 2 6.03 2 11s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7zm.5-11H10v5l4.25 2.55.75-1.23-3.5-2.07V7z" fill="#7A808C"/></svg>
+        <span>Nutrition</span>
+      </div>
+      <div class="nav-item active" onclick="navigate('screen-fridge')">
+        <svg viewBox="0 0 24 24"><path d="M18 2.01L6 2c-1.1 0-2 .89-2 2v18c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.11-.9-1.99-2-1.99zM18 11H6V4h12v7zm0 9H6v-7h12v7z" fill="#2D9B6F"/></svg>
+        <span style="color:var(--green)">Fridge</span>
+      </div>
+      <div class="nav-item" onclick="navigate('screen-profile')">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#7A808C"/></svg>
+        <span>Profile</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ======= PROFILE SCREEN ======= -->
+  <div class="screen" id="screen-profile">
+    <div class="profile-header">
+      <div class="screen-title">Profile</div>
+      <div class="screen-subtitle">Your family & settings</div>
+    </div>
+
+    <div class="scroll-area" style="padding:0 0 100px;">
+      <div style="margin:0 20px 14px;background:white;border-radius:var(--radius);padding:18px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+        <div style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:14px;">Children</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.05);">
+          <div style="font-size:32px;">👧</div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:700;color:var(--text)">Mia</div>
+            <div style="font-size:12px;color:var(--text-muted)">Age 5 · No restrictions</div>
+          </div>
+          <div style="font-size:13px;color:var(--green);font-weight:600;">Edit</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+          <div style="font-size:32px;">👦</div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:700;color:var(--text)">Jake</div>
+            <div style="font-size:12px;color:var(--text-muted)">Age 8 · No restrictions</div>
+          </div>
+          <div style="font-size:13px;color:var(--green);font-weight:600;">Edit</div>
+        </div>
+      </div>
+
+      <div style="margin:0 20px 14px;background:white;border-radius:var(--radius);padding:18px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+        <div style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:14px;">Fridge</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text)">Samsung Family Hub</div>
+            <div style="font-size:12px;color:var(--green);">● Connected</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);font-weight:500;">Change ›</div>
+        </div>
+      </div>
+
+      <div style="margin:0 20px 14px;background:white;border-radius:var(--radius);padding:18px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+        <div style="font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:14px;">Notifications</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.05);">
+          <div style="font-size:14px;font-weight:500;color:var(--text)">Morning meal suggestion</div>
+          <div style="background:var(--green);width:42px;height:24px;border-radius:12px;position:relative;cursor:pointer;"><div style="position:absolute;right:3px;top:3px;width:18px;height:18px;background:white;border-radius:50%;"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 6px;">
+          <div>
+            <div style="font-size:14px;font-weight:500;color:var(--text)">Evening meal confirmation</div>
+            <div style="font-size:12px;color:var(--text-muted);">Max 2 notifications/day</div>
+          </div>
+          <div style="background:var(--green);width:42px;height:24px;border-radius:12px;position:relative;cursor:pointer;"><div style="position:absolute;right:3px;top:3px;width:18px;height:18px;background:white;border-radius:50%;"></div></div>
+        </div>
+      </div>
+
+      <div style="margin:0 20px 14px;background:var(--green-light);border-radius:var(--radius);padding:18px;border:1px solid rgba(45,155,111,0.2);">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:20px;">⭐</span>
+          <div style="font-size:15px;font-weight:800;color:var(--green)">FridgeKid Plus</div>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:12px;">You're on the free plan. Upgrade for 4 child profiles, full nutrition history, and weekly shopping lists.</div>
+        <button style="background:var(--green);color:white;border:none;border-radius:12px;padding:12px 20px;font-size:14px;font-weight:700;width:100%;cursor:pointer;">Upgrade · $4.99 / month</button>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item" onclick="navigate('screen-home')">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="#7A808C"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="nav-item" onclick="navigate('screen-nutrition')">
+        <svg viewBox="0 0 24 24"><path d="M11 2C6.03 2 2 6.03 2 11s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7zm.5-11H10v5l4.25 2.55.75-1.23-3.5-2.07V7z" fill="#7A808C"/></svg>
+        <span>Nutrition</span>
+      </div>
+      <div class="nav-item" onclick="navigate('screen-fridge')">
+        <svg viewBox="0 0 24 24"><path d="M18 2.01L6 2c-1.1 0-2 .89-2 2v18c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.11-.9-1.99-2-1.99zM18 11H6V4h12v7zm0 9H6v-7h12v7z" fill="#7A808C"/></svg>
+        <span>Fridge</span>
+      </div>
+      <div class="nav-item active" onclick="navigate('screen-profile')">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#2D9B6F"/></svg>
+        <span style="color:var(--green)">Profile</span>
+      </div>
+    </nav>
+  </div>
+
+</div>
+</div>
+
+<script>
+  const appState = {
+    activeKid: 'mia',
+    mealIndex: 0,
+  };
+
+  const kids = {
+    mia: {
+      name: 'Mia',
+      age: 'Age 5',
+      nutritionSubtitle: "How Mia's doing this week",
+      nutritionAge: 'Age 5 · USDA targets for 4–8 yr',
+      nutritionTag: '4 of 5 covered',
+      snapshotTitle: "Mia's nutrition this week",
+      snapshotRows: [
+        { icon: '🥩', iconBg: '#E8F7F1', label: 'Iron', sub: 'From eggs, spinach, pasta', status: 'Covered ✓', statusClass: 'status-good' },
+        { icon: '☀️', iconBg: '#FFF8E6', label: 'Vitamin D', sub: "Tonight's meal helps", status: 'Getting there', statusClass: 'status-mid' },
+        { icon: '🥦', iconBg: '#E8F7F1', label: 'Vitamin C', sub: 'From broccoli, orange juice', status: 'Covered ✓', statusClass: 'status-good' },
+        { icon: '🥚', iconBg: '#E8F7F1', label: 'Protein', sub: 'Eggs, cheese, chicken', status: 'Covered ✓', statusClass: 'status-good' }
+      ]
+    },
+    jake: {
+      name: 'Jake',
+      age: 'Age 8',
+      nutritionSubtitle: "How Jake's doing this week",
+      nutritionAge: 'Age 8 · USDA targets for 4–8 yr',
+      nutritionTag: '3 of 5 covered',
+      snapshotTitle: "Jake's nutrition this week",
+      snapshotRows: [
+        { icon: '🥚', iconBg: '#E8F7F1', label: 'Protein', sub: 'Eggs, cheese, chicken', status: 'Covered ✓', statusClass: 'status-good' },
+        { icon: '🌾', iconBg: '#E8F7F1', label: 'Fiber', sub: 'Pasta, oats, berries', status: 'Covered ✓', statusClass: 'status-good' },
+        { icon: '🍌', iconBg: '#FFF8E6', label: 'Potassium', sub: 'Would improve with bananas', status: 'Could use support', statusClass: 'status-mid' },
+        { icon: '🥕', iconBg: '#FFF2EE', label: 'Veg variety', sub: 'Still mostly pasta-safe meals', status: 'Data gap', statusClass: 'status-gap' }
+      ]
+    }
+  };
+
+  const meals = [
+    {
+      name: 'Hidden Veg Pasta',
+      sub: "From what's in your fridge right now",
+      time: '⏱ 18 min',
+      rating: '⭐⭐⭐ Kid-friendly',
+      nutrients: ['✓ Iron', '✓ Vitamin C', '✓ Protein'],
+      confidence: 'You already have pasta, spinach, carrots, tomatoes, eggs, and cheese. This keeps dinner shared while still working for Mia\'s current safe-food pattern.',
+      chips: ['23 fridge items synced', '1 kid-safe variation', 'No extra shopping required'],
+      recipeSub: 'A family favourite — kids taste pasta, parents know better 😉',
+      tip: "Blend the sauce completely smooth — kids won't see the spinach or carrots. Serve Mia's portion before adding any chilli or strong herbs."
+    },
+    {
+      name: 'Cheesy Egg Fried Rice',
+      sub: 'Low-effort and good for end-of-week fridge cleanout',
+      time: '⏱ 14 min',
+      rating: '⭐⭐ Safe for picky nights',
+      nutrients: ['✓ Protein', '✓ Iron', '✓ Energy'],
+      confidence: 'You have eggs, leftover rice, cheese, and carrots. This is a strong backup when one kid needs a predictable texture and dinner needs to happen fast.',
+      chips: ['Fast pantry-fridge combo', 'Good backup meal', 'Minimal prep'],
+      recipeSub: 'Soft texture, familiar flavors, very low resistance for selective eaters.',
+      tip: 'Keep one portion plain before mixing in chopped vegetables. Jake can add cheese on top instead of mixing it through.'
+    },
+    {
+      name: 'Broccoli Mac Bake',
+      sub: 'More variety without turning dinner into a second cooking job',
+      time: '⏱ 22 min',
+      rating: '⭐⭐⭐ Shared family meal',
+      nutrients: ['✓ Calcium', '✓ Vitamin C', '✓ Protein'],
+      confidence: 'You have pasta, milk, broccoli, and cheese. This suggestion trades novelty for reliability while still adding one visible vegetable.',
+      chips: ['Uses low fridge items', 'One-pan dinner', 'Supports vitamin C'],
+      recipeSub: 'A baked mac-and-cheese style dinner with one visible vegetable and an easy safe-food off-ramp.',
+      tip: 'Serve broccoli on the side for the kid who rejects mixed textures. The base meal still works either way.'
+    }
+  ];
+
+  function navigate(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  function startDemo() {
+    navigate('screen-home');
+    renderKidState();
+    renderMeal();
+  }
+
+  function showUnsupported() {
+    navigate('screen-unsupported');
+  }
+
+  function selectKid(kidId) {
+    appState.activeKid = kidId;
+    document.querySelectorAll('.kid-chip[data-kid]').forEach(chip => {
+      chip.classList.toggle('selected', chip.dataset.kid === kidId);
+    });
+    renderKidState();
+  }
+
+  function renderKidState() {
+    const kid = kids[appState.activeKid];
+    document.getElementById('snapshot-title').textContent = kid.snapshotTitle;
+    document.getElementById('nutrition-subtitle').textContent = kid.nutritionSubtitle;
+    document.getElementById('nutrition-child-name').textContent = kid.name;
+    document.getElementById('nutrition-child-age').textContent = kid.nutritionAge;
+    document.getElementById('nutrition-child-tag').textContent = kid.nutritionTag;
+
+    const snapshot = document.getElementById('snapshot-card');
+    snapshot.innerHTML = kid.snapshotRows.map(row => `
+      <div class="nutrition-row">
+        <div class="nutrition-icon" style="background:${row.iconBg};">${row.icon}</div>
+        <div>
+          <div class="nutrition-label">${row.label}</div>
+          <div class="nutrition-sub">${row.sub}</div>
+        </div>
+        <div class="nutrition-status ${row.statusClass}">${row.status}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderMeal() {
+    const meal = meals[appState.mealIndex];
+    document.getElementById('meal-name').textContent = meal.name;
+    document.getElementById('meal-sub').textContent = meal.sub;
+    document.getElementById('meal-time').textContent = meal.time;
+    document.getElementById('meal-rating').textContent = meal.rating;
+    document.getElementById('recipe-title').textContent = meal.name;
+    document.getElementById('recipe-sub').textContent = meal.recipeSub;
+    document.getElementById('recipe-time').textContent = meal.time;
+    document.getElementById('recipe-rating').textContent = meal.rating;
+    document.getElementById('recipe-tip').textContent = meal.tip;
+    document.getElementById('confidence-copy').textContent = meal.confidence;
+
+    document.getElementById('meal-nutrients').innerHTML = meal.nutrients
+      .map(item => `<div class="nutrient-pill">${item}</div>`)
+      .join('');
+
+    document.getElementById('confidence-row').innerHTML = meal.chips
+      .map(item => `<div class="confidence-chip">${item}</div>`)
+      .join('');
+
+    const dots = document.querySelectorAll('.meal-dot');
+    dots.forEach((dot, index) => dot.classList.toggle('active', index === appState.mealIndex));
+  }
+
+  document.querySelector('.meal-card').addEventListener('dblclick', () => {
+    appState.mealIndex = (appState.mealIndex + 1) % meals.length;
+    renderMeal();
+  });
+
+  navigate('screen-onboarding');
+</script>
+</body>
+</html>
